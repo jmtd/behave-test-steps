@@ -149,6 +149,7 @@ class Container(object):
     def execute(self, cmd, detach=False):
         """ executes cmd in container and return its output """
         inst = d.exec_create(container=self.container, cmd=cmd)
+        self.logger.debug("container.execute: d.exec_create returned")
 
         if detach:
             d.exec_start(inst, detach)
@@ -156,11 +157,13 @@ class Container(object):
 
         output = d.exec_start(inst, detach=detach)
         retcode = d.exec_inspect(inst)['ExitCode']
+        self.logger.debug("container.execute: past first exec_start/exec_inspect")
 
         count = 0
 
         while retcode is None:
             count += 1
+            self.logger.debug("container.execute: retcode=None, repolling count {}/15".format(count))
             retcode = d.exec_inspect(inst)['ExitCode']
             time.sleep(1)
             if count > 15:
