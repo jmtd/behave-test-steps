@@ -155,7 +155,7 @@ class Container(object):
             d.exec_start(inst, detach)
             return None
 
-        self.logger.debug("container.execute: before d.exec_start")
+        self.logger.debug("container.execute: before d.exec_start, detach={}".format(detach))
         output = d.exec_start(inst, detach=detach)
         self.logger.debug("container.execute: after.exec_start, before d.exec_inspect")
         retcode = d.exec_inspect(inst)['ExitCode']
