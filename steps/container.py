@@ -160,10 +160,11 @@ class Container(object):
         itr = d.exec_start(inst, detach=False, stream=True)
         timeout = time.time() + 60
         output = ''
-        while output += next(itr):
+        while True
             if time.time() > timeout:
                 self.logger.debug("container.execute: timeout reading from exec")
                 break
+            output += next(itr)
 
         self.logger.debug("container.execute: after.exec_start, before d.exec_inspect")
         retcode = d.exec_inspect(inst)['ExitCode']
