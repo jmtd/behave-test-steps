@@ -160,7 +160,7 @@ class Container(object):
         itr = d.exec_start(inst, detach=False, stream=True)
         timeout = time.time() + 60
         output = ''
-        while True
+        while True:
             if time.time() > timeout:
                 self.logger.debug("container.execute: timeout reading from exec")
                 break
