@@ -156,7 +156,15 @@ class Container(object):
             return None
 
         self.logger.debug("container.execute: before d.exec_start, detach={}".format(detach))
-        output = d.exec_start(inst, detach=detach)
+
+        itr = d.exec_start(inst, detach=False, stream=True)
+        timeout = time.time() + 60
+        output = ''
+        while output += next(itr):
+            if time.time() > timeout:
+                self.logger.debug("container.execute: timeout reading from exec")
+                break
+
         self.logger.debug("container.execute: after.exec_start, before d.exec_inspect")
         retcode = d.exec_inspect(inst)['ExitCode']
         self.logger.debug("container.execute: after exec_inspect")
