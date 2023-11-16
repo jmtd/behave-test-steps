@@ -157,7 +157,7 @@ class Container(object):
 
         self.logger.debug("container.execute: before d.exec_start, detach={}".format(detach))
 
-        itr = d.exec_start(inst, detach=False, stream=True)
+        itr = d.exec_start(inst, detach=True, stream=True)
         timeout = time.time() + 60
         output = ''
         while True:
