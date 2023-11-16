@@ -164,7 +164,9 @@ class Container(object):
             if time.time() > timeout:
                 self.logger.debug("container.execute: timeout reading from exec")
                 break
+            self.logger.debug("container.execute: attempting to read a chunk..")
             output += next(itr)
+            self.logger.debug("container.execute: ...success reading chunk")
 
         self.logger.debug("container.execute: after.exec_start, before d.exec_inspect")
         retcode = d.exec_inspect(inst)['ExitCode']
