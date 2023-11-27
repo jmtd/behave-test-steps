@@ -160,7 +160,7 @@ class Container(object):
 
         ctx = mp.get_context('fork')
         q = ctx.Queue()
-        p = ctx.Process(target=lambda(q): q.put(d.exec_start(inst, detach=detach)), args=(q,))
+        p = ctx.Process(target=lambda q: q.put(d.exec_start(inst, detach=detach)), args=(q,))
         p.start()
 
         if None == p.join(5): # timeout in secs
