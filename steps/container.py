@@ -30,6 +30,7 @@ import re
 import tarfile
 import tempfile
 import time
+import multiprocessing as mp
 
 try:
     d = docker.Client(version="1.22")
@@ -156,7 +157,17 @@ class Container(object):
             return None
 
         self.logger.debug("container.execute: before d.exec_start, detach={}".format(detach))
-        output = d.exec_start(inst, detach=detach)
+
+        ctx = mp.get_context('fork')
+        q = ctx.Queue()
+        p = ctx.Process(target=lambda(q): q.put(d.exec_start(inst, detach=detach)), args=(q,))
+        p.start()
+
+        if None == p.join(5): # timeout in secs
+            p.terminate()
+            raise ExecException("container.execute: timeout reading from exec (command '{}')".format(cmd))
+
+        output = q.get()
         self.logger.debug("container.execute: after.exec_start, before d.exec_inspect")
         retcode = d.exec_inspect(inst)['ExitCode']
         self.logger.debug("container.execute: after exec_inspect")
