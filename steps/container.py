@@ -149,14 +149,12 @@ class Container(object):
 
     def execute(self, cmd, detach=False):
         """ executes cmd in container and return its output """
+        self.logger.debug("container.execute(%,%)".format(cmd,detach))
         inst = d.exec_create(container=self.container, cmd=cmd)
-        self.logger.debug("container.execute: d.exec_create returned")
 
         if detach:
             d.exec_start(inst, detach)
             return None
-
-        self.logger.debug("container.execute: before d.exec_start, detach={}".format(detach))
 
         ctx = mp.get_context('fork')
         q = ctx.Queue()
@@ -168,22 +166,13 @@ class Container(object):
             raise ExecException("container.execute: timeout reading from exec (command '{}')".format(cmd))
 
         output = q.get()
-        self.logger.debug("container.execute: after.exec_start, before d.exec_inspect")
         retcode = d.exec_inspect(inst)['ExitCode']
-        self.logger.debug("container.execute: after exec_inspect")
 
-        count = 0
-
-        while retcode is None:
-            count += 1
-            self.logger.debug("container.execute: retcode=None, repolling count {}/15".format(count))
-            retcode = d.exec_inspect(inst)['ExitCode']
-            time.sleep(1)
-            if count > 15:
-                raise ExecException("Command %s timed out, output: %s" % (cmd, output))
+        if retcode is None:
+            raise ExecException("Command %s timed out, output: %s" % (cmd, output))
 
         if retcode != 0:
-            raise ExecException("Command %s failed to execute, return code: %s" % (cmd, retcode), output)
+            raise ExecException("Command %s failed, return code: %s" % (cmd, retcode), output)
 
         return output
 
