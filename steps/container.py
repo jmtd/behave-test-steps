@@ -163,7 +163,7 @@ class Container(object):
         p = ctx.Process(target=lambda q: q.put(d.exec_start(inst, detach=detach)), args=(q,))
         p.start()
 
-        if None == p.join(5): # timeout in secs
+        if None == p.join(15): # timeout in secs
             p.terminate()
             raise ExecException("container.execute: timeout reading from exec (command '{}')".format(cmd))
 
