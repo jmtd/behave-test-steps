@@ -149,7 +149,7 @@ class Container(object):
 
     def execute(self, cmd, detach=False):
         """ executes cmd in container and return its output """
-        self.logger.debug("container.execute(%,%)".format(cmd,detach))
+        self.logger.debug("container.execute(%s,%s)" % (cmd,detach))
         inst = d.exec_create(container=self.container, cmd=cmd)
 
         if detach:
