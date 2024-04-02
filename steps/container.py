@@ -187,8 +187,11 @@ class Container(object):
             return d.attach(container=self.container, stream=False, logs=history)
 
     def remove_image(self, force=False):
-        self.logger.info("Removing image %s" % self.image_id)
-        d.remove_image(image=self.image_id, force=force)
+        if os.environ.get("CTF_REMOVE_IMAGE", "True").lower() == "false":
+            self.logger.info("Not Removing image {}, CTF_REMOVE_IMAGE=false".format(self.image_id))
+        else:
+            self.logger.info("Removing image {}".format(self.image_id))
+            d.remove_image(image=self.image_id, force=force)
 
     def copy_file_to_container(self, src_file, dest_folder):
         if not os.path.isabs(src_file):
