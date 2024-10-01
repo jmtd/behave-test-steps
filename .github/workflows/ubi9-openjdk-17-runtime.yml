@@ -1,5 +1,6 @@
 name: run behave-test-steps regression tests
 on:
+  workflow_call:
   push:
     branches: [ v1 ]
   pull_request:
