@@ -3,10 +3,15 @@ import logging
 import re
 import os
 import tempfile
+import docker
 
 from container import Container
 from steps import _execute
 
+# A future version of Cekit will expose this to us, for now we hard-code
+# XXX There's now three of these spread across files. Singleton?
+DOCKER_API_VERSION = "1.35"
+DOCKER_CLIENT = docker.APIClient(version=DOCKER_API_VERSION)
 
 logger = logging.getLogger("cekit")
 
@@ -29,16 +34,50 @@ def s2i_inner(context, application, path='.', env="", incremental=False, tag="ma
         mirror = "-e 'MAVEN_MIRROR_URL=%s'" % os.getenv("MAVEN_MIRROR_URL")
 
     image_id = "integ-" + context.image
-    command = "s2i build --loglevel=5 --pull-policy if-not-present %s --context-dir=%s -r=%s %s %s %s %s %s %s" % (
-        mirror, path, tag, env, application, context.image, image_id, "--incremental" if incremental else "",
-        "--runtime-image="+runtime_image if runtime_image else ""
-    )
-    logger.info("Executing new S2I build with the command [%s]..." % command)
 
-    output = _execute(command)
-    if output:
-        context.config.userdata['s2i_build_log'] = output
-    return output
+    # Inspect the builder image for some S2I parameters.
+    labels = DOCKER_CLIENT.inspect_image(context.image).get("Config", {}).get("Labels",{})
+    assemble_user = labels.get("io.openshift.s2i.assemble-user", False)
+    scripts_url = labels.get("io.openshift.s2i.scripts-url", False)
+
+    with tempfile.TemporaryDirectory(prefix="behave-test-steps.") as workdir:
+        dockerfile = os.path.join(workdir, "Dockerfile")
+
+        # Perform S2I Dockerfile/source generation
+        command = f"""s2i build --loglevel=5 --pull-policy if-not-present\
+                {mirror}\
+                --context-dir={path}\
+                -r={tag}\
+                {env}\
+                {application}\
+                {context.image}\
+                {image_id}\
+                {"--incremental" if incremental else ""}\
+                {"--runtime-image="+runtime_image if runtime_image else ""}\
+                {"--assemble-user="+assemble_user if assemble_user else ""}\
+                {"--scripts-url="+scripts_url if scripts_url else ""}\
+                --as-dockerfile {dockerfile} \
+        """
+        logger.info("Executing S2I with the command [%s]..." % command)
+        output = _execute(command)
+        if output:
+            context.config.userdata['s2i_build_log'] = output
+        else:
+            # s2i likely failed. Bail out
+            return False
+
+        # perform the S2I build
+        command = f"""docker build  -t {image_id} {workdir}"""
+        logger.info("Executing S2I build with the command [%s]..." % command)
+        output = _execute(command)
+        if output:
+            oldlog = context.config.userdata.get('s2i_build_log',"")
+            context.config.userdata['s2i_build_log'] = oldlog + "\n" + output
+        else:
+            # S2I build failed. Bail out
+            return False
+
+        return output
 
 
 @given(u's2i build {application} from {path} without running')
